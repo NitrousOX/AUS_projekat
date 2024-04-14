@@ -2,7 +2,7 @@ STA 102
 TCP 57328
 
 
-DO_REG  4 2600   0  0      4     0  DO  @DigOut #
-DI_REG  0 0		 0  0      0     0  DI  @DigIn #
-IN_REG  4 3800   0  0      4	 0  AI  @AnaIn #
-HR_INT  0 0		 0  0      0	 0  AO  @AnaOut #
+DO_REG  4 2600   0  0      1     0     DO  @DigOut 2
+DI_REG  0 0		 0  0      1     0     DI  @DigIn 2
+IN_REG  4 3800   0  0      4095	 2000  AI  @AnaIn 4
+HR_INT  0 0		 0  0      4095	 1200  AO  @AnaOut 4
