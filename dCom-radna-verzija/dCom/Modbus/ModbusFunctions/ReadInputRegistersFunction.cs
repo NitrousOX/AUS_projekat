@@ -2,6 +2,7 @@
 using Modbus.FunctionParameters;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using System.Reflection;
 
@@ -24,22 +25,57 @@ namespace Modbus.ModbusFunctions
         /// <inheritdoc />
         public override byte[] PackRequest()
         {
-            Console.WriteLine("Request started");
-            // ModbusReadCommandParameters nam treba
             byte[] recVal = new byte[12];
+            // ModbusReadCommandParameters nam treba
+            ModbusReadCommandParameters Read = this.CommandParameters as ModbusReadCommandParameters;
             //Head message
 
-            // Data message
+            short transactionId = IPAddress.HostToNetworkOrder((short)Read.TransactionId);
+            short protocolId = IPAddress.HostToNetworkOrder((short)Read.ProtocolId);
+            short length = IPAddress.HostToNetworkOrder((short)Read.Length);
+            short startAddress = IPAddress.HostToNetworkOrder((short)Read.StartAddress);
+            short quantity = IPAddress.HostToNetworkOrder((short)Read.Quantity);
 
-            return recVal;
+            Buffer.BlockCopy(BitConverter.GetBytes(transactionId), 0, recVal, 0, 2);
+            Buffer.BlockCopy(BitConverter.GetBytes(protocolId), 0, recVal, 2, 2);
+            Buffer.BlockCopy(BitConverter.GetBytes(length), 0, recVal, 4, 2);
+
+            recVal[6] = Read.UnitId;
+            recVal[7] = Read.FunctionCode;
+
+            // Data message
+            Buffer.BlockCopy(BitConverter.GetBytes(startAddress), 0, recVal, 8, 2);
+            Buffer.BlockCopy(BitConverter.GetBytes(quantity), 0, recVal, 10, 2);
+
             Console.WriteLine("Request ended");
+            return recVal;
+
+
         }
 
         /// <inheritdoc />
         public override Dictionary<Tuple<PointType, ushort>, ushort> ParseResponse(byte[] response)
         {
-            //TO DO: IMPLEMENT
-            throw new NotImplementedException();
+            ModbusReadCommandParameters ModbusRead = this.CommandParameters as ModbusReadCommandParameters;
+            Dictionary<Tuple<PointType, ushort>, ushort> recnik = new Dictionary<Tuple<PointType, ushort>, ushort>();
+
+            ushort count = response[8];
+            ushort value;
+
+            int start1 = 8;
+            int start2 = 7;
+
+            for (int i = 0; i < count / 2; i++)
+            {
+                byte first_byte = response[start1 += 2];
+                byte second_byte = response[start2 += 2];
+
+                value = (ushort)(first_byte + (second_byte << 8));
+
+                recnik.Add(new Tuple<PointType, ushort>(PointType.ANALOG_INPUT, (ushort)(ModbusRead.StartAddress + i)), value);
+            }
+
+            return recnik;
         }
     }
 }
